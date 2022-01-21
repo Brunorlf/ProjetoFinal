@@ -1,0 +1,249 @@
+---
+title: "Projeto Final"
+author: "Bruno Fernandes"
+date: "21 de janeiro de 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Importação de bibliotecas
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(lubridate)
+```
+
+
+#Diretório dos Dados
+
+```{r}
+getwd()
+```
+
+#Importação dos Dados
+
+```{r}
+
+acidentes <- read.delim("C:/Users/ferna/Desktop/Bruno/Analytics Descritiva/Projeto/acidentespe2020.csv", sep = ";")
+```
+
+# Dados Gerais da base
+
+```{r}
+summary (acidentes)
+```
+
+
+# Tratamento dos dados
+
+### Transformar a coluna data de CHAR para Date
+
+```{r}
+
+acidentes$data <- as.Date(parse_date_time(acidentes$data,"dmy"))
+
+summary(acidentes$data)
+class(acidentes$data)
+
+```
+
+### Transformar a coluna hora de CHAR para lubridate
+
+```{r}
+
+acidentes$hora <- hms(acidentes$hora)
+
+summary(acidentes$hora)
+class(acidentes$hora)
+
+```
+
+### Extrair o mês da coluna "data"
+
+```{r}
+
+mes <- month(acidentes$data, label=TRUE)
+
+summary(mes)
+class(mes)
+
+```
+
+### Extrair o mês da coluna "data"
+
+```{r}
+
+dsemana <- wday(acidentes$data, label=TRUE)
+
+summary(dsemana)
+class(dsemana)
+
+```
+
+### Extrair o mês da coluna "data"
+
+```{r}
+
+horario <- hour(acidentes$hora)
+
+summary(horario)
+class(horario)
+
+```
+
+### Adicionando as novas colunas com Mês, Horario, e Dia da Semana no Data Frame
+
+```{r}
+
+acidentes <- data.frame(acidentes,mes = month(acidentes$data, label=TRUE),dsemana = wday(acidentes$data, label=TRUE),horario = hour(acidentes$hora)) 
+
+```
+
+### Adicionando a nova coluna de contador para acidentes
+
+```{r}
+
+acidentes <- data.frame(acidentes, contador = 1 ) 
+
+```
+
+```{r}
+str(acidentes)
+```
+
+
+
+# Analise dos Dados
+
+
+## 1. Tipos de Acidentes mais Recorrentes
+
+  
+```{r}
+
+library(dplyr)
+library(ggplot2)
+
+acidentes %>%
+  group_by(acidentes$tipo) %>%
+  summarise(
+    contator = n())
+  ggplot(acidentes, aes(x = tipo)) +
+  geom_bar (Stat = "identity")+
+  coord_flip()
+
+  
+```
+
+#### Pode se ver que temos os maiores tipos de acidente sendo: ABALROAMENTO LONGITUDINAL, COLISÃO TRASEIRA e BALROAMENTO TRANSVERSAL.
+
+
+
+## 2. Maiores Acidentes por Turno
+
+```{r}
+
+acidentes %>%
+  group_by(acidentes$turno) %>%
+  summarise(
+    contator = n())
+
+  ggplot(acidentes, mapping = aes(x = turno,y = contador, colour = turno)) +
+  geom_bar (stat = "identity")
+
+```
+
+#### Nota-se que os maiores horários com acidentes estão compreendidos no horario comercial (Manhã e Tarde). Deste modo, abre espaço para maiores estudos e posicionamento de equipes do detran para mitigar acidentes nestes horarios
+
+
+## 3. Quantidade de Acidentes ao Longo do Ano
+
+```{r}
+
+acidentes %>%
+  group_by(acidentes$mes) %>%
+  summarise(
+    contator = n())
+
+ ggplot(acidentes, mapping = aes(x = mes,y = contador, colour = mes)) +
+  geom_bar (stat = "identity")
+
+
+```
+
+#### Nota-se uma grande redução de acidentes do primeiro trimestre para os demais devido ao avanço do covid e medidas restritivas do governo.
+
+
+## 4. Quantidade de Acidentes por Dia da Semana
+
+```{r}
+acidentes %>%
+  group_by(acidentes$dsemana) %>%
+  summarise(
+    contador = n())
+
+ ggplot(acidentes, mapping = aes(x = dsemana,y = contador, colour = dsemana)) +
+  geom_bar (stat = "identity")
+
+```
+
+#### Nenhuma diferença significativa entre os dias. Mas mostra um maior concentração de acidentes nos dias comerciais (Segunda a Sexta).
+
+
+## Quantidade de Acidentes Por Horário
+
+```{r}
+
+ggplot(acidentes, mapping = aes(x = horario,y = contador,label = horario, colour = horario)) +
+  geom_bar (stat = "identity")+
+  geom_label(size = 2)
+
+```
+#### Nota-se que os horários de 8h e 16h aprensentam mais acidentes, fazendo relaçao com os horarios movimentação das pessoas para chegarem e sairem do trabalho. 
+
+
+## Quantidade de Veículos envolvidos em Acidentes
+
+  
+```{r}
+veiculos <- select(acidentes,c("auto", "moto", "ciclom", "ciclista", "pedestre", "onibus", "caminhao", "viatura", "outros"))
+
+somaveiculo <- as.integer(apply(veiculos, 2,sum))
+
+tipoveiculo <- c("auto", "moto", "ciclom", "ciclista", "pedestre", "onibus", "caminhao", "viatura", "outros")
+
+
+gveiculos <- data.frame(tipoveiculo,somaveiculo)
+
+ggplot(gveiculos, aes(x = tipoveiculo,y=somaveiculo, fill = tipoveiculo)) + 
+          geom_col()
+
+show(gveiculos)
+  
+```
+
+### Nota-se que houve uma maior incidencia de acidentes por Automoveis e motocicletas.
+
+
+## Quantidade de Acidentes Com vítimas e Vítimas Fatais
+
+```{r}
+
+ggplot(acidentes, aes(x = tipo,y=vitimas)) + 
+          geom_col()+
+          coord_flip()
+
+
+ggplot(acidentes, aes(x = tipo,y=vitimasfatais)) + 
+          geom_col()+
+          coord_flip()
+
+```
+
